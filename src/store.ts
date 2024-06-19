@@ -46,7 +46,8 @@ export class Store implements IStore {
   }
 
   allowedToWrite(key: string): boolean {
-    throw new Error("Method not implemented.");
+    const permission = this.getPermission(key);
+    return permission.includes("w");
   }
 
   read(path: string): StoreResult {
