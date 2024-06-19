@@ -323,10 +323,10 @@ describe("Test Store - Permission Inheritance", () => {
       @Restrict("r")
       public parentProp = lazy(() => new ChildStore());
     }
-    class ChildStore extends ParentStore { }
+    class ChildStore extends ParentStore {}
     const baseChildStore = new ChildStore();
     const nestedChildStore = baseChildStore.read(
-      "parentProp:parentProp:parentProp"
+      "parentProp:parentProp:parentProp",
     ) as Store;
     expect(nestedChildStore).toBeInstanceOf(ChildStore);
     expect(baseChildStore.allowedToWrite("parentProp")).toBe(false);

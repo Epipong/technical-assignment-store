@@ -1,3 +1,5 @@
+import "reflect-metadata";
+
 import { JSONArray, JSONObject, JSONPrimitive } from "./json-types";
 
 export type Permission = "r" | "w" | "rw" | "none";
@@ -20,14 +22,27 @@ export interface IStore {
   entries(): JSONObject;
 }
 
-export function Restrict(...params: unknown[]): any {
+const permissionMetadataKey = Symbol("permission");
+
+export function Restrict(...permissions: Permission[]): any {
+  return (target: Object, propertyKey: string | symbol) => {
+    permissions.forEach((permission) =>
+      Reflect.defineMetadata(
+        permissionMetadataKey,
+        permission,
+        target,
+        propertyKey,
+      ),
+    );
+  };
 }
 
 export class Store implements IStore {
   defaultPolicy: Permission = "rw";
 
   allowedToRead(key: string): boolean {
-    throw new Error("Method not implemented.");
+    const permission = this.getPermission(key);
+    return permission.includes("r");
   }
 
   allowedToWrite(key: string): boolean {
@@ -48,5 +63,10 @@ export class Store implements IStore {
 
   entries(): JSONObject {
     throw new Error("Method not implemented.");
+  }
+
+  private getPermission(key: string): Permission {
+    const permission = Reflect.getMetadata(permissionMetadataKey, this, key);
+    return permission || this.defaultPolicy;
   }
 }
