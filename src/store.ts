@@ -58,11 +58,6 @@ export class Store implements IStore {
       if (current instanceof Store && !current.allowedToRead(key)) {
         throw new Error(`Read access denied for key: ${key}`);
       }
-
-      if (current[key] === undefined) {
-        return undefined;
-      }
-
       current = current[key];
     });
 
@@ -70,7 +65,31 @@ export class Store implements IStore {
   }
 
   write(path: string, value: StoreValue): StoreValue {
-    throw new Error("Method not implemented.");
+    const keys = path.split(":");
+    let current: any = this;
+    let store: Store = this;
+
+    keys.forEach((key) => {
+      if (current instanceof Store) {
+        store = current;
+      }
+      if (current[key] === undefined) {
+        if (!store.allowedToWrite(key)) {
+          throw new Error(`Write access denied for key: ${key}`);
+        }
+        current[key] = {};
+      }
+      current = current[key];
+    });
+
+    const lastKey = keys.pop();
+    if (lastKey) {
+      if (!store.allowedToWrite(lastKey)) {
+        throw new Error(`Write access denied for key: ${lastKey}`);
+      }
+      store.setProperty(lastKey, value);
+    }
+    return value;
   }
 
   writeEntries(entries: JSONObject): void {
@@ -92,5 +111,9 @@ export class Store implements IStore {
   private getPermission(key: string): Permission {
     const permission = Reflect.getMetadata(permissionMetadataKey, this, key);
     return permission || this.defaultPolicy;
+  }
+
+  private setProperty(key: string, value: StoreValue): void {
+    Reflect.set(this, key, value);
   }
 }
