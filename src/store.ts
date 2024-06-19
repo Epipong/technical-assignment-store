@@ -60,35 +60,21 @@ export class Store implements IStore {
       }
       current = current[key];
     });
-
     return current;
   }
 
   write(path: string, value: StoreValue): StoreValue {
     const keys = path.split(":");
-    let current: any = this;
-    let store: Store = this;
-
-    keys.forEach((key) => {
-      if (current instanceof Store) {
-        store = current;
-      }
-      if (current[key] === undefined) {
-        if (!store.allowedToWrite(key)) {
-          throw new Error(`Write access denied for key: ${key}`);
-        }
-        current[key] = {};
+    const firstKey = keys.shift();
+    const values: any = {};
+    let current = values;
+    keys.forEach((key, index) => {
+      if (!current[key]) {
+        current[key] = keys.length - 1 === index ? value : {};
       }
       current = current[key];
     });
-
-    const lastKey = keys.pop();
-    if (lastKey) {
-      if (!store.allowedToWrite(lastKey)) {
-        throw new Error(`Write access denied for key: ${lastKey}`);
-      }
-      store.setProperty(lastKey, value);
-    }
+    this.setProperty(firstKey!, keys.length > 0 ? values : value);
     return value;
   }
 
