@@ -51,7 +51,22 @@ export class Store implements IStore {
   }
 
   read(path: string): StoreResult {
-    throw new Error("Method not implemented.");
+    const keys = path.split(":");
+    let current: any = this;
+
+    keys.forEach((key) => {
+      if (current instanceof Store && !current.allowedToRead(key)) {
+        throw new Error(`Read access denied for key: ${key}`);
+      }
+
+      if (current[key] === undefined) {
+        return undefined;
+      }
+
+      current = current[key];
+    });
+
+    return current;
   }
 
   write(path: string, value: StoreValue): StoreValue {
@@ -64,14 +79,13 @@ export class Store implements IStore {
 
   entries(): JSONObject {
     const entries: JSONObject = {};
+
     for (const key in this) {
       const permission = this.getPermission(key);
       if (!permission.includes("none")) {
         entries[key] = this[key] as JSONValue;
       }
     }
-    console.log(entries);
-
     return entries;
   }
 
