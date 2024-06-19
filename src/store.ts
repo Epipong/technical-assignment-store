@@ -55,9 +55,7 @@ export class Store implements IStore {
     let current: any = this;
 
     keys.forEach((key) => {
-      if (current instanceof Store && !current.allowedToRead(key)) {
-        throw new Error(`Read access denied for key: ${key}`);
-      }
+      this.checkStoreAndAllowedToRead(current, key);
       current = current[key];
     });
     return current;
@@ -65,15 +63,19 @@ export class Store implements IStore {
 
   write(path: string, value: StoreValue): StoreValue {
     const keys = path.split(":");
-    const firstKey = keys.shift();
     const values: any = {};
     let current = values;
+    const firstKey = keys.shift();
+    this.checkStoreAndAllowedToWrite(this, firstKey!);
+
     keys.forEach((key, index) => {
+      this.checkStoreAndAllowedToWrite(current, key);
       if (!current[key]) {
         current[key] = keys.length - 1 === index ? value : {};
       }
       current = current[key];
     });
+
     this.setProperty(firstKey!, keys.length > 0 ? values : value);
     return value;
   }
@@ -101,5 +103,17 @@ export class Store implements IStore {
 
   private setProperty(key: string, value: StoreValue): void {
     Reflect.set(this, key, value);
+  }
+
+  private checkStoreAndAllowedToRead(current: any, key: string) {
+    if (current instanceof Store && !current.allowedToRead(key)) {
+      throw new Error(`Read access denied for key: ${key}`);
+    }
+  }
+
+  private checkStoreAndAllowedToWrite(current: any, key: string) {
+    if (current instanceof Store && !current.allowedToWrite(key)) {
+      throw new Error(`Write access denied for key: ${key}`);
+    }
   }
 }
