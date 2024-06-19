@@ -1,6 +1,6 @@
 import "reflect-metadata";
 
-import { JSONArray, JSONObject, JSONPrimitive } from "./json-types";
+import { JSONArray, JSONObject, JSONPrimitive, JSONValue } from "./json-types";
 
 export type Permission = "r" | "w" | "rw" | "none";
 
@@ -62,7 +62,16 @@ export class Store implements IStore {
   }
 
   entries(): JSONObject {
-    throw new Error("Method not implemented.");
+    const entries: JSONObject = {};
+    for (const key in this) {
+      const permission = this.getPermission(key);
+      if (!permission.includes("none")) {
+        entries[key] = this[key] as JSONValue;
+      }
+    }
+    console.log(entries);
+
+    return entries;
   }
 
   private getPermission(key: string): Permission {
