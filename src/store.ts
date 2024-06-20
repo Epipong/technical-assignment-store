@@ -75,7 +75,13 @@ export class Store implements IStore {
   }
 
   writeEntries(entries: JSONObject): void {
-    throw new Error("Method not implemented.");
+    for (const [key, value] of Object.entries(entries)) {
+      if (this.allowedToWrite(key)) {
+        this.setProperty(key, value);
+      } else {
+        throw new Error(`Write access denied for key: ${key}`);
+      }
+    }
   }
 
   entries(): JSONObject {
@@ -97,6 +103,10 @@ export class Store implements IStore {
 
   private getProperty<T extends StoreValue>(key: string): T {
     return Reflect.get(this, key) as T;
+  }
+
+  private setProperty(key: string, value: StoreValue) {
+    Reflect.set(this, key, value);
   }
 
   private checkStoreAndAllowedToRead(store: any, key: string) {
