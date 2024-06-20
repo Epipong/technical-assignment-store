@@ -1,7 +1,6 @@
 import "reflect-metadata";
 
 import { JSONArray, JSONObject, JSONPrimitive, JSONValue } from "./json-types";
-import { UserStore } from "./userStore";
 
 export type Permission = "r" | "w" | "rw" | "none";
 
@@ -25,16 +24,14 @@ export interface IStore {
 
 const permissionMetadataKey = Symbol("permission");
 
-export function Restrict(...permissions: Permission[]): any {
+export function Restrict(permission?: Permission): any {
   return (target: Object, propertyKey: string | symbol) => {
-    permissions.forEach((permission) =>
       Reflect.defineMetadata(
         permissionMetadataKey,
-        permission,
+        permission || "none",
         target,
         propertyKey,
-      ),
-    );
+      )
   };
 }
 
