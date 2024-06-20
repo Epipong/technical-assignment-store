@@ -2,6 +2,7 @@ import "reflect-metadata";
 
 import { JSONArray, JSONObject, JSONPrimitive, JSONValue } from "./json-types";
 import { PermissionHandler } from "./permissionHandler";
+import { Utils } from "./utils";
 
 export type Permission = "r" | "w" | "rw" | "none";
 
@@ -54,7 +55,7 @@ export class Store implements IStore {
     let currentProp: any = this;
     keys.forEach((key) => {
       PermissionHandler.checkReadPermission(currentProp, key);
-      currentProp = this.extractValue(currentProp[key]);
+      currentProp = Utils.extractValue(currentProp[key]);
     });
     return currentProp;
   }
@@ -62,16 +63,16 @@ export class Store implements IStore {
   write(path: string, value: StoreValue): StoreValue {
     const keys = path.split(":");
     let currentProp: any = this;
-    const entries = this.valueToEntries(value);
+    const entries = Utils.valueToEntries(value);
 
     keys.forEach((key, index) => {
       PermissionHandler.checkWritePermission(currentProp, key);
-      currentProp[key] = this.isLastIndex(keys, index)
-        ? this.extractValue(entries)
+      currentProp[key] = Utils.isLastIndex(keys, index)
+        ? Utils.extractValue(entries)
         : new Store();
       currentProp = currentProp[key];
     });
-    return this.extractValue(value);
+    return Utils.extractValue(value);
   }
 
   writeEntries(entries: JSONObject): void {
@@ -99,28 +100,5 @@ export class Store implements IStore {
 
   private setProperty(key: string, value: StoreValue) {
     Reflect.set(this, key, value);
-  }
-
-  private isLastIndex(array: any[], index: number) {
-    return array.length - 1 === index;
-  }
-
-  private extractValue(value: StoreValue): StoreValue {
-    return typeof value === "function" ? value() : value;
-  }
-
-  private valueToEntries(value: any): StoreValue {
-    if (typeof value !== "object") {
-      return value;
-    }
-
-    const entries: any = new Store();
-    for (const key in value) {
-      entries[key] =
-        typeof value[key] === "object"
-          ? this.valueToEntries(value[key])
-          : value[key];
-    }
-    return entries;
   }
 }
