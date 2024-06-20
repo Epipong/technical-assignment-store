@@ -1,3 +1,4 @@
+import { JSONArray, JSONObject, JSONValue } from "./json-types";
 import { Store, StoreValue } from "./store";
 
 export class Utils {
@@ -10,8 +11,12 @@ export class Utils {
   }
 
   static valueToEntries(value: any): StoreValue {
-    if (typeof value !== "object") {
+    if (typeof value !== "object" || !value) {
       return value;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map(this.valueToEntries) as JSONArray
     }
 
     const entries: any = new Store();
