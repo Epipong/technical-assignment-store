@@ -323,13 +323,33 @@ describe("Test Store - Permission Inheritance", () => {
       @Restrict("r")
       public parentProp = lazy(() => new ChildStore());
     }
-    class ChildStore extends ParentStore { }
+    class ChildStore extends ParentStore {}
     const baseChildStore = new ChildStore();
     const nestedChildStore = baseChildStore.read(
-      "parentProp:parentProp:parentProp"
+      "parentProp:parentProp:parentProp",
     ) as Store;
     expect(nestedChildStore).toBeInstanceOf(ChildStore);
     expect(baseChildStore.allowedToWrite("parentProp")).toBe(false);
     expect(nestedChildStore.allowedToWrite("parentProp")).toBe(false);
+  });
+});
+
+/*
+
+11. Function Write Operations
+
+This tests the ability of the TestStore class to write from a function result.
+
+*/
+describe("TestStore class - Function Read", () => {
+  it("should be allowed to write from a function", () => {
+    class TestStore extends Store {
+      constructor() {
+        super();
+        this.defaultPolicy = "w";
+      }
+    }
+    const testStore = new TestStore();
+    expect(testStore.write("test:photo", () => 20)).toBe(20);
   });
 });
