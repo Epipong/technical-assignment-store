@@ -1,6 +1,7 @@
 import "reflect-metadata";
 
 import { JSONArray, JSONObject, JSONPrimitive, JSONValue } from "./json-types";
+import { PermissionHandler } from "./permissionHandler";
 
 export type Permission = "r" | "w" | "rw" | "none";
 
@@ -52,7 +53,7 @@ export class Store implements IStore {
     const keys = path.split(":");
     let currentProp: any = this;
     keys.forEach((key) => {
-      this.checkStoreAndAllowedToRead(currentProp, key);
+      PermissionHandler.checkReadPermission(currentProp, key);
       currentProp = this.extractValue(currentProp[key]);
     });
     return currentProp;
@@ -64,14 +65,10 @@ export class Store implements IStore {
     const entries = this.valueToEntries({ value });
 
     keys.forEach((key, index) => {
-      if (!currentProp[key]) {
-        this.checkStoreAndAllowedToWrite(currentProp, key);
-        currentProp[key] = this.isLastIndex(keys, index)
-          ? entries
-          : new Store();
-      } else if (this.isLastIndex(keys, index)) {
-        currentProp[key] = entries;
-      }
+      PermissionHandler.checkWritePermission(currentProp, key);
+      currentProp[key] = this.isLastIndex(keys, index)
+        ? entries
+        : new Store();
       currentProp = currentProp[key];
     });
     return value;
@@ -79,14 +76,13 @@ export class Store implements IStore {
 
   writeEntries(entries: JSONObject): void {
     for (const [key, value] of Object.entries(entries)) {
-      this.checkStoreAndAllowedToWrite(this, key);
+      PermissionHandler.checkWritePermission(this, key);
       this.setProperty(key, value);
     }
   }
 
   entries(): JSONObject {
     const entries: JSONObject = {};
-
     for (const key in this) {
       const permission = this.getPermission(key);
       if (!permission.includes("none")) {
@@ -101,37 +97,16 @@ export class Store implements IStore {
     return permission || this.defaultPolicy;
   }
 
-  private getProperty<T extends StoreValue>(key: string): T {
-    return Reflect.get(this, key) as T;
-  }
-
   private setProperty(key: string, value: StoreValue) {
     Reflect.set(this, key, value);
-  }
-
-  private checkStoreAndAllowedToRead(store: any, key: string) {
-    if (store instanceof Store && !store.allowedToRead(key)) {
-      throw new Error(`Read access denied for key: ${key}`);
-    }
   }
 
   private isLastIndex(array: any[], index: number) {
     return array.length - 1 === index;
   }
 
-  private checkStoreAndAllowedToWrite(store: any, key: string) {
-    if (store instanceof Store) {
-      const property = store.getProperty(key);
-      if (!property && !store.allowedToWrite(key)) {
-        throw new Error(`Write access denied for key: ${key}`);
-      }
-    }
-  }
-
   private extractValue(value: StoreValue): StoreValue {
-    return typeof value === "function" ?
-      value() :
-      value;
+    return typeof value === "function" ? value() : value;
   }
 
   private valueToEntries({
