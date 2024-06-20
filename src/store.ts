@@ -68,7 +68,9 @@ export class Store implements IStore {
     keys.forEach((key, index) => {
       if (!currentProp[key]) {
         this.checkStoreAndAllowedToWrite(currentProp, key);
-        currentProp[key] = keys.length - 1 === index ? value : {};
+        currentProp[key] = index === keys.length - 1 ? value : {};
+      } else if (index === keys.length - 1) {
+        currentProp[key] = value;
       }
       currentProp = currentProp[key];
     });
