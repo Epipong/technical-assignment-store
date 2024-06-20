@@ -1,6 +1,5 @@
 import { Store } from "../src/store";
 import { Utils } from "../src/utils";
-import { JSONArray } from "../src/json-types";
 
 describe("Utils class - Basic Operations", () => {
   it("should be true if it's the last index", () => {
