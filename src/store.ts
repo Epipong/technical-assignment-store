@@ -53,7 +53,7 @@ export class Store implements IStore {
     let currentProp: any = this;
     keys.forEach((key) => {
       this.checkStoreAndAllowedToRead(currentProp, key);
-      currentProp = currentProp[key];
+      currentProp = this.extractValue(currentProp[key]);
     });
     return currentProp;
   }
@@ -61,7 +61,7 @@ export class Store implements IStore {
   write(path: string, value: StoreValue): StoreValue {
     const keys = path.split(":");
     let currentProp: any = this;
-    const entries = this.valueToEntries({ value: value as any });
+    const entries = this.valueToEntries({ value });
 
     keys.forEach((key, index) => {
       if (!currentProp[key]) {
@@ -126,6 +126,12 @@ export class Store implements IStore {
         throw new Error(`Write access denied for key: ${key}`);
       }
     }
+  }
+
+  private extractValue(value: StoreValue): StoreValue {
+    return typeof value === "function" ?
+      value() :
+      value;
   }
 
   private valueToEntries({
