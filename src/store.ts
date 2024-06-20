@@ -26,12 +26,12 @@ const permissionMetadataKey = Symbol("permission");
 
 export function Restrict(permission?: Permission): any {
   return (target: Object, propertyKey: string | symbol) => {
-      Reflect.defineMetadata(
-        permissionMetadataKey,
-        permission || "none",
-        target,
-        propertyKey,
-      )
+    Reflect.defineMetadata(
+      permissionMetadataKey,
+      permission || "none",
+      target,
+      propertyKey,
+    );
   };
 }
 
@@ -61,13 +61,16 @@ export class Store implements IStore {
   write(path: string, value: StoreValue): StoreValue {
     const keys = path.split(":");
     let currentProp: any = this;
+    const entries = this.valueToEntries({ value: value as any });
 
     keys.forEach((key, index) => {
       if (!currentProp[key]) {
         this.checkStoreAndAllowedToWrite(currentProp, key);
-        currentProp[key] = index === keys.length - 1 ? value : {};
-      } else if (index === keys.length - 1) {
-        currentProp[key] = value;
+        currentProp[key] = this.isLastIndex(keys, index)
+          ? entries
+          : new Store();
+      } else if (this.isLastIndex(keys, index)) {
+        currentProp[key] = entries;
       }
       currentProp = currentProp[key];
     });
@@ -76,11 +79,8 @@ export class Store implements IStore {
 
   writeEntries(entries: JSONObject): void {
     for (const [key, value] of Object.entries(entries)) {
-      if (this.allowedToWrite(key)) {
-        this.setProperty(key, value);
-      } else {
-        throw new Error(`Write access denied for key: ${key}`);
-      }
+      this.checkStoreAndAllowedToWrite(this, key);
+      this.setProperty(key, value);
     }
   }
 
@@ -115,6 +115,10 @@ export class Store implements IStore {
     }
   }
 
+  private isLastIndex(array: any[], index: number) {
+    return array.length - 1 === index;
+  }
+
   private checkStoreAndAllowedToWrite(store: any, key: string) {
     if (store instanceof Store) {
       const property = store.getProperty(key);
@@ -122,5 +126,27 @@ export class Store implements IStore {
         throw new Error(`Write access denied for key: ${key}`);
       }
     }
+  }
+
+  private valueToEntries({
+    entries = {},
+    value,
+  }: {
+    entries?: any;
+    value: any;
+  }) {
+    if (typeof value !== "object") {
+      return value;
+    }
+    for (const key in value) {
+      if (typeof value[key] === "object") {
+        entries[key] = new Store();
+        this.valueToEntries({ entries: entries[key], value: value[key] });
+      } else {
+        entries[key] = value[key];
+      }
+    }
+
+    return entries;
   }
 }
