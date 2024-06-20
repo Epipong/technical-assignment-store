@@ -30,4 +30,13 @@ describe("Utils class - Basic Operations", () => {
     const entries = Utils.valueToEntries([1, 2, "admin"]);
     expect(entries).toBeInstanceOf(Array);
   });
+
+  it("should allow to insert nested value in array", () => {
+    const entries = Utils.valueToEntries([
+      12,
+      { store: { name: "John" } },
+      { value: 42 },
+    ]);
+    expect(entries).toBeInstanceOf(Array);
+  });
 });

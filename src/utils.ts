@@ -16,14 +16,14 @@ export class Utils {
     }
 
     if (Array.isArray(value)) {
-      return value.map(this.valueToEntries) as JSONArray
+      return value.map(Utils.valueToEntries) as JSONArray;
     }
 
     const entries: any = new Store();
     for (const key in value) {
       entries[key] =
         typeof value[key] === "object"
-          ? this.valueToEntries(value[key])
+          ? Utils.valueToEntries(value[key])
           : Utils.extractValue(value[key]);
     }
     return entries;
