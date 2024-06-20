@@ -1,6 +1,7 @@
 import "reflect-metadata";
 
 import { JSONArray, JSONObject, JSONPrimitive, JSONValue } from "./json-types";
+import { UserStore } from "./userStore";
 
 export type Permission = "r" | "w" | "rw" | "none";
 
@@ -52,31 +53,25 @@ export class Store implements IStore {
 
   read(path: string): StoreResult {
     const keys = path.split(":");
-    let current: any = this;
-
+    let currentProp: any = this;
     keys.forEach((key) => {
-      this.checkStoreAndAllowedToRead(current, key);
-      current = current[key];
+      this.checkStoreAndAllowedToRead(currentProp, key);
+      currentProp = currentProp[key];
     });
-    return current;
+    return currentProp;
   }
 
   write(path: string, value: StoreValue): StoreValue {
     const keys = path.split(":");
-    const values: any = {};
-    let current = values;
-    const firstKey = keys.shift();
-    this.checkStoreAndAllowedToWrite(this, firstKey!);
+    let currentProp: any = this;
 
     keys.forEach((key, index) => {
-      this.checkStoreAndAllowedToWrite(current, key);
-      if (!current[key]) {
-        current[key] = keys.length - 1 === index ? value : {};
+      if (!currentProp[key]) {
+        this.checkStoreAndAllowedToWrite(currentProp, key);
+        currentProp[key] = keys.length - 1 === index ? value : {};
       }
-      current = current[key];
+      currentProp = currentProp[key];
     });
-
-    this.setProperty(firstKey!, keys.length > 0 ? values : value);
     return value;
   }
 
@@ -101,19 +96,22 @@ export class Store implements IStore {
     return permission || this.defaultPolicy;
   }
 
-  private setProperty(key: string, value: StoreValue): void {
-    Reflect.set(this, key, value);
+  private getProperty<T extends StoreValue>(key: string): T {
+    return Reflect.get(this, key) as T;
   }
 
-  private checkStoreAndAllowedToRead(current: any, key: string) {
-    if (current instanceof Store && !current.allowedToRead(key)) {
+  private checkStoreAndAllowedToRead(store: any, key: string) {
+    if (store instanceof Store && !store.allowedToRead(key)) {
       throw new Error(`Read access denied for key: ${key}`);
     }
   }
 
-  private checkStoreAndAllowedToWrite(current: any, key: string) {
-    if (current instanceof Store && !current.allowedToWrite(key)) {
-      throw new Error(`Write access denied for key: ${key}`);
+  private checkStoreAndAllowedToWrite(store: any, key: string) {
+    if (store instanceof Store) {
+      const property = store.getProperty(key);
+      if (!property && !store.allowedToWrite(key)) {
+        throw new Error(`Write access denied for key: ${key}`);
+      }
     }
   }
 }
