@@ -222,9 +222,13 @@ describe("Test Store - Decorators", () => {
     class TestStore extends Store {
       @Restrict("none")
       public restrictedProp = "test";
+
+      @Restrict("w")
+      public writableProp = 42;
     }
     const testStore = new TestStore();
     expect(testStore.entries()).not.toHaveProperty("restrictedProp");
+    expect(testStore.entries()).not.toHaveProperty("writableProp");
   });
 });
 
