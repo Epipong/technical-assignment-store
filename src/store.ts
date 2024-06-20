@@ -121,7 +121,7 @@ export class Store implements IStore {
     const entries: JSONObject = {};
     for (const key in this) {
       const permission = this.getPermission(key);
-      if (!permission.includes("none")) {
+      if (permission.includes("r")) {
         entries[key] = this[key] as JSONValue;
       }
     }
