@@ -333,3 +333,23 @@ describe("Test Store - Permission Inheritance", () => {
     expect(nestedChildStore.allowedToWrite("parentProp")).toBe(false);
   });
 });
+
+/*
+
+11. Function Write Operations
+
+This tests the ability of the TestStore class to write from a function result.
+
+*/
+describe("TestStore class - Function Read", () => {
+  it("should be allowed to write from a function", () => {
+    class TestStore extends Store {
+      constructor() {
+        super();
+        this.defaultPolicy = "w";
+      }
+    }
+    const testStore = new TestStore();
+    expect(testStore.write("test:photo", () => 20)).toBe(20);
+  });
+});

@@ -62,16 +62,16 @@ export class Store implements IStore {
   write(path: string, value: StoreValue): StoreValue {
     const keys = path.split(":");
     let currentProp: any = this;
-    const entries = this.valueToEntries({ value });
+    const entries = this.valueToEntries(value);
 
     keys.forEach((key, index) => {
       PermissionHandler.checkWritePermission(currentProp, key);
       currentProp[key] = this.isLastIndex(keys, index)
-        ? entries
+        ? this.extractValue(entries)
         : new Store();
       currentProp = currentProp[key];
     });
-    return value;
+    return this.extractValue(value);
   }
 
   writeEntries(entries: JSONObject): void {
@@ -109,25 +109,18 @@ export class Store implements IStore {
     return typeof value === "function" ? value() : value;
   }
 
-  private valueToEntries({
-    entries = {},
-    value,
-  }: {
-    entries?: any;
-    value: any;
-  }) {
+  private valueToEntries(value: any): StoreValue {
     if (typeof value !== "object") {
       return value;
     }
-    for (const key in value) {
-      if (typeof value[key] === "object") {
-        entries[key] = new Store();
-        this.valueToEntries({ entries: entries[key], value: value[key] });
-      } else {
-        entries[key] = value[key];
-      }
-    }
 
+    const entries: any = new Store();
+    for (const key in value) {
+      entries[key] =
+        typeof value[key] === "object"
+          ? this.valueToEntries(value[key])
+          : value[key];
+    }
     return entries;
   }
 }
